@@ -1,23 +1,38 @@
 from apiflask import APIFlask, Schema, fields
-from email.mime.text import MIMEText
-from email.header import Header
+from email.message import EmailMessage
 import smtplib
 import env
 
 
 class Sender:
     def __init__(self):
-        self.client = smtplib.SMTP_SSL(env.smtp_host, env.smtp_port)
-        self.client.ehlo()
-        self.client.login(env.smtp_username, env.smtp_password)
+        self.client = self.get_smtp_client()
 
-    def send_to(self, to: str, message: str, title: str, name_from: str, name_to: str):
-        body = MIMEText(message)
-        body["From"] = Header(f"{name_from}<{env.smtp_username}>", "utf-8")
-        body["To"] = Header(f"{name_to}<{to}>", "utf-8")
-        body["Subject"] = Header(title, "utf-8")
-        self.client.sendmail(env.smtp_username, to, body.as_bytes())
-        return body.as_string()
+    @staticmethod
+    def get_smtp_client():
+        client = smtplib.SMTP_SSL(env.smtp_host, env.smtp_port)
+        client.ehlo()
+        client.login(env.smtp_username, env.smtp_password)
+        return client
+
+    @staticmethod
+    def build_message(to, message, title, name_from=None, name_to=None):
+        msg = EmailMessage()
+        msg["Subject"] = title
+        msg["From"] = f"{name_from} <{env.smtp_username}>" if name_from else env.smtp_username
+        msg["To"] = f"{name_to} <{to}>" if name_to else to
+        msg.set_content(message, charset="utf-8", subtype="plain")
+        return msg
+
+    def send_to(self, to: str, message: str, title: str, name_from: str = None, name_to: str = None):
+        message = self.build_message(to, message, title, name_from, name_to)
+        try:
+            self.client.send_message(message)
+        except smtplib.SMTPServerDisconnected:
+            self.client = self.get_smtp_client()
+            self.client.send_message(message)
+
+        return message.as_string()
 
 
 sender = Sender()
