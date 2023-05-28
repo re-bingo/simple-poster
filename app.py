@@ -1,4 +1,5 @@
 from apiflask import APIFlask, Schema, fields
+from datetime import datetime, timezone
 from email.message import EmailMessage
 import smtplib
 import env
@@ -21,6 +22,7 @@ class Sender:
         msg["Subject"] = title
         msg["From"] = f"{name_from} <{env.smtp_username}>" if name_from else env.smtp_username
         msg["To"] = f"{name_to} <{to}>" if name_to else to
+        msg["Date"] = datetime.utcnow().replace(tzinfo=timezone.utc).strftime("%a, %d %b %Y %H:%M:%S %z")
         msg.set_content(message, charset="utf-8", subtype="plain")
         return msg
 
