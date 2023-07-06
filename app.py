@@ -17,16 +17,31 @@ class Sender:
         return client
 
     @staticmethod
-    def build_message(to, message, title, name_from=None, name_to=None):
+    def build_message(
+        to, message, title, name_from=None, name_to=None, subtype="plain"
+    ):
         msg = EmailMessage()
         msg["Subject"] = title
-        msg["From"] = f"{name_from} <{env.smtp_username}>" if name_from else env.smtp_username
+        msg["From"] = (
+            f"{name_from} <{env.smtp_username}>" if name_from else env.smtp_username
+        )
         msg["To"] = f"{name_to} <{to}>" if name_to else to
-        msg["Date"] = datetime.utcnow().replace(tzinfo=timezone.utc).strftime("%a, %d %b %Y %H:%M:%S %z")
-        msg.set_content(message, charset="utf-8", subtype="plain")
+        msg["Date"] = (
+            datetime.utcnow()
+            .replace(tzinfo=timezone.utc)
+            .strftime("%a, %d %b %Y %H:%M:%S %z")
+        )
+        msg.set_content(message, charset="utf-8", subtype=subtype)
         return msg
 
-    def send_to(self, to: str, message: str, title: str, name_from: str = None, name_to: str = None):
+    def send_to(
+        self,
+        to: str,
+        message: str,
+        title: str,
+        name_from: str = None,
+        name_to: str = None,
+    ):
         message = self.build_message(to, message, title, name_from, name_to)
         try:
             self.client.send_message(message)
@@ -46,8 +61,9 @@ class PostIn(Schema):
     to: str = fields.Email(required=True)
     message: str = fields.String(required=True)
     title: str = fields.String(required=True)
-    name_from: str = fields.String(required=True, data_key="nameFrom")
-    name_to: str = fields.String(required=True, data_key="nameTo")
+    name_from: str = fields.String(data_key="nameFrom", default=None)
+    name_to: str = fields.String(data_key="nameTo", default=None)
+    sybtype: str = fields.String(data_key="subType", default="plain")
 
 
 @app.post("/sendmail")
