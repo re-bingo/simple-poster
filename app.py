@@ -1,7 +1,9 @@
-from apiflask import APIFlask, Schema, fields
+import smtplib
 from datetime import datetime, timezone
 from email.message import EmailMessage
-import smtplib
+
+from apiflask import APIFlask, Schema, fields
+
 import env
 
 
@@ -41,8 +43,9 @@ class Sender:
         title: str,
         name_from: str = None,
         name_to: str = None,
+        subtype: str = "plain",
     ):
-        message = self.build_message(to, message, title, name_from, name_to)
+        message = self.build_message(to, message, title, name_from, name_to, subtype)
         try:
             self.client.send_message(message)
         except smtplib.SMTPServerDisconnected:
@@ -63,7 +66,7 @@ class PostIn(Schema):
     title: str = fields.String(required=True)
     name_from: str = fields.String(data_key="nameFrom", default=None)
     name_to: str = fields.String(data_key="nameTo", default=None)
-    sybtype: str = fields.String(data_key="subType", default="plain")
+    subtype: str = fields.String(data_key="subType", default="plain")
 
 
 @app.post("/sendmail")
